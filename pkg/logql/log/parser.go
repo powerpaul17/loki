@@ -241,6 +241,10 @@ func (r *RegexpParser) Process(_ int64, line []byte, lbs *LabelsBuilder) ([]byte
 				if lbs.BaseHas(sanitize) {
 					sanitize = fmt.Sprintf("%s%s", sanitize, duplicateSuffix)
 				}
+				if !lbs.ParserLabelHints().ShouldExtract(sanitize) {
+					return "", false
+				}
+
 				return sanitize, true
 			})
 			if !ok {
@@ -277,14 +281,16 @@ func (l *LogfmtParser) Process(_ int64, line []byte, lbs *LabelsBuilder) ([]byte
 	for l.dec.ScanKeyval() {
 		key, ok := l.keys.Get(l.dec.Key(), func() (string, bool) {
 			sanitized := sanitizeLabelKey(string(l.dec.Key()), true)
-			if !lbs.ParserLabelHints().ShouldExtract(sanitized) {
-				return "", false
-			}
 			if len(sanitized) == 0 {
 				return "", false
 			}
+
 			if lbs.BaseHas(sanitized) {
 				sanitized = fmt.Sprintf("%s%s", sanitized, duplicateSuffix)
+			}
+
+			if !lbs.ParserLabelHints().ShouldExtract(sanitized) {
+				return "", false
 			}
 			return sanitized, true
 		})
@@ -341,11 +347,12 @@ func (l *PatternParser) Process(_ int64, line []byte, lbs *LabelsBuilder) ([]byt
 	names := l.names[:len(matches)]
 	for i, m := range matches {
 		name := names[i]
-		if !lbs.parserKeyHints.ShouldExtract(name) {
-			continue
-		}
 		if lbs.BaseHas(name) {
 			name = name + duplicateSuffix
+		}
+
+		if !lbs.parserKeyHints.ShouldExtract(name) {
+			continue
 		}
 
 		lbs.Set(name, string(m))
@@ -444,7 +451,12 @@ func (l *LogfmtExpressionParser) Process(_ int64, line []byte, lbs *LabelsBuilde
 		if _, ok := l.expressions[key]; ok {
 			if lbs.BaseHas(key) {
 				key = key + duplicateSuffix
+				if !lbs.ParserLabelHints().ShouldExtract(key) {
+					// Don't extract duplicates if we don't have to
+					break
+				}
 			}
+
 			lbs.Set(key, string(val))
 
 			if lbs.ParserLabelHints().AllRequiredExtracted() {
@@ -527,18 +539,18 @@ func (j *JSONExpressionParser) Process(_ int64, line []byte, lbs *LabelsBuilder)
 		}
 
 		identifier := j.ids[idx]
-		if !lbs.ParserLabelHints().ShouldExtract(identifier) {
-			// It's possible that something was asked for that
-			// shouldn't actually be extracted
-			return
-		}
-
 		key, _ := j.keys.Get(unsafeGetBytes(identifier), func() (string, bool) {
 			if lbs.BaseHas(identifier) {
 				identifier = identifier + duplicateSuffix
 			}
 			return identifier, true
 		})
+
+		if !lbs.ParserLabelHints().ShouldExtract(key) {
+			// It's possible that something was asked for that
+			// shouldn't actually be extracted
+			return
+		}
 
 		switch typ {
 		case jsonparser.Null:
@@ -629,14 +641,13 @@ func (u *UnpackParser) unpack(entry []byte, lbs *LabelsBuilder) ([]byte, error) 
 				isPacked = true
 				return nil
 			}
-
 			key, ok := u.keys.Get(key, func() (string, bool) {
 				field := unsafeGetString(key)
-				if !lbs.ParserLabelHints().ShouldExtract(field) {
-					return "", false
-				}
 				if lbs.BaseHas(field) {
 					field = field + duplicateSuffix
+				}
+				if !lbs.ParserLabelHints().ShouldExtract(field) {
+					return "", false
 				}
 				return field, true
 			})
