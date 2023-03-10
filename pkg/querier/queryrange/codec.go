@@ -406,11 +406,6 @@ func (Codec) EncodeRequest(ctx context.Context, r queryrangebase.Request) (*http
 	}
 }
 
-func getQueryTags(ctx context.Context) string {
-	v, _ := ctx.Value(httpreq.QueryTagsHTTPHeader).(string) // it's ok to be empty
-	return v
-}
-
 type Buffer interface {
 	Bytes() []byte
 }
@@ -971,6 +966,11 @@ func httpResponseHeadersToPromResponseHeaders(httpHeaders http.Header) []queryra
 	}
 
 	return promHeaders
+}
+
+func getQueryTags(ctx context.Context) string {
+	v, _ := ctx.Value(httpreq.QueryTagsHTTPHeader).(string) // it's ok to be empty
+	return v
 }
 
 func NewEmptyResponse(r queryrangebase.Request) (queryrangebase.Response, error) {
