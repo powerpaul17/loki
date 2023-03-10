@@ -28,7 +28,7 @@ type ParserHint interface {
 
 	// Holds state about what's already been extracted for the associated
 	// labels. This assumes that only required labels are ever extracted
-	RecordExtracted()
+	RecordExtracted(string)
 	AllRequiredExtracted() bool
 	Reset()
 }
@@ -36,18 +36,26 @@ type ParserHint interface {
 type Hints struct {
 	noLabels       bool
 	requiredLabels []string
-	extracted      int
+	extracted      []string
 }
 
 func (p *Hints) ShouldExtract(key string) bool {
 	if len(p.requiredLabels) == 0 {
 		return true
 	}
+
+	for _, l := range p.extracted {
+		if l == key {
+			return false
+		}
+	}
+
 	for _, l := range p.requiredLabels {
 		if l == key {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -68,19 +76,24 @@ func (p *Hints) NoLabels() bool {
 	return p.noLabels || p.AllRequiredExtracted()
 }
 
-func (p *Hints) RecordExtracted() {
-	p.extracted++
+func (p *Hints) RecordExtracted(key string) {
+	for _, l := range p.requiredLabels {
+		if l == key {
+			p.extracted = append(p.extracted, key)
+			return
+		}
+	}
 }
 
 func (p *Hints) AllRequiredExtracted() bool {
 	if len(p.requiredLabels) == 0 {
 		return false
 	}
-	return p.extracted == len(p.requiredLabels)
+	return len(p.extracted) == len(p.requiredLabels)
 }
 
 func (p *Hints) Reset() {
-	p.extracted = 0
+	p.extracted = p.extracted[:0]
 }
 
 // NewParserHint creates a new parser hint using the list of labels that are seen and required in a query.
@@ -90,9 +103,11 @@ func NewParserHint(requiredLabelNames, groups []string, without, noLabels bool, 
 	hints = appendLabelHints(hints, groups...)
 	hints = appendLabelHints(hints, metricLabelName)
 	hints = uniqueString(hints)
+
+	extracted := make([]string, 0, len(hints))
 	if noLabels {
 		if len(hints) > 0 {
-			return &Hints{requiredLabels: hints}
+			return &Hints{requiredLabels: hints, extracted: extracted}
 		}
 		return &Hints{noLabels: true}
 	}
@@ -102,7 +117,7 @@ func NewParserHint(requiredLabelNames, groups []string, without, noLabels bool, 
 	if without || len(groups) == 0 {
 		return noParserHints
 	}
-	return &Hints{requiredLabels: hints}
+	return &Hints{requiredLabels: hints, extracted: extracted}
 }
 
 // appendLabelHints Appends the label to the list of hints with and without the duplicate suffix.
