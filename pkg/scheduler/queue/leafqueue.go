@@ -9,8 +9,7 @@ type QueuePath []string //nolint:revive
 
 // LeafQueue is an hierarchical queue implementation where each sub-queue
 // has the same guarantees to be chosen from.
-// Each queue has also a local queue, which gets chosen from first. Only if the
-// local queue is empty, items from the sub-queues are dequeued.
+// Each queue has also a local queue, which gets chosen with equal preference as the sub-queues.
 type LeafQueue struct {
 	// local queue
 	ch RequestChannel
