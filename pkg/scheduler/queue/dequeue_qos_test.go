@@ -134,15 +134,15 @@ func TestQueryFairnessAcrossSameLevel(t *testing.T) {
 	}
 
 	requestQueue := NewRequestQueue(1024, 0, m)
-	requestQueue.Enqueue("tenant1", []string{}, r(0), 0, nil)
-	requestQueue.Enqueue("tenant1", []string{}, r(1), 0, nil)
-	requestQueue.Enqueue("tenant1", []string{}, r(2), 0, nil)
-	requestQueue.Enqueue("tenant1", []string{"abc"}, r(10), 0, nil)
-	requestQueue.Enqueue("tenant1", []string{"abc"}, r(11), 0, nil)
-	requestQueue.Enqueue("tenant1", []string{"abc"}, r(12), 0, nil)
-	requestQueue.Enqueue("tenant1", []string{"xyz"}, r(20), 0, nil)
-	requestQueue.Enqueue("tenant1", []string{"xyz", "123"}, r(200), 0, nil)
-	requestQueue.Enqueue("tenant1", []string{"xyz", "456"}, r(210), 0, nil)
+	_ = requestQueue.Enqueue("tenant1", []string{}, r(0), 0, nil)
+	_ = requestQueue.Enqueue("tenant1", []string{}, r(1), 0, nil)
+	_ = requestQueue.Enqueue("tenant1", []string{}, r(2), 0, nil)
+	_ = requestQueue.Enqueue("tenant1", []string{"abc"}, r(10), 0, nil)
+	_ = requestQueue.Enqueue("tenant1", []string{"abc"}, r(11), 0, nil)
+	_ = requestQueue.Enqueue("tenant1", []string{"abc"}, r(12), 0, nil)
+	_ = requestQueue.Enqueue("tenant1", []string{"xyz"}, r(20), 0, nil)
+	_ = requestQueue.Enqueue("tenant1", []string{"xyz", "123"}, r(200), 0, nil)
+	_ = requestQueue.Enqueue("tenant1", []string{"xyz", "456"}, r(210), 0, nil)
 	requestQueue.queues.recomputeUserQueriers()
 
 	// set timeout to minize impact on overall test run duration in case something goes wrong
